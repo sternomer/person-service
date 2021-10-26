@@ -1,0 +1,61 @@
+// protoc proto/blog.proto --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+package blog;
+
+option go_package = "github.com/sternomer/go-grpc-mongodb-master";
+
+message Person {
+    string id = 1;
+    string birthdate = 2;
+    string firstName = 3;
+    string lastName= 4;
+}
+
+message CreatePersonReq {
+    Person person = 1; 
+}
+
+message CreatePersonRes {
+    Person person = 1;  
+}
+
+message ReadPersonReq {
+    string id = 1;
+}
+
+message ReadPersonRes {
+    Person person = 1;
+}
+
+message UpdatePersonReq {
+    Person person = 1;
+}
+
+message UpdatePersonRes {
+    Person person = 1;
+}
+
+message DeletePersonReq {
+    string id = 1;
+}
+
+message DeletePersonRes {
+    bool success = 1;
+}
+
+message ListPersonsReq {}
+
+message ListPersonsRes {
+    Person person = 1;
+}
+
+service PersonService {
+    rpc CreatePerson(CreatePersonReq) returns (CreatePersonRes);
+    rpc ReadPerson(ReadPersonReq) returns (ReadPersonRes);
+    rpc UpdatePerson(UpdatePersonReq) returns (UpdatePersonRes);
+    rpc DeletePerson(DeletePersonReq) returns (DeletePersonRes);
+    rpc ListPersons(ListPersonsReq) returns (stream ListPersonsRes);
+}
+
