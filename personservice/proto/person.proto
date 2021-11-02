@@ -6,6 +6,13 @@ package blog;
 
 option go_package = "github.com/sternomer/go-grpc-mongodb-master";
 
+service PersonService {
+    rpc CreatePerson(PersonObj) returns (PersonObj);
+    rpc ReadPerson(ReadPersonReq) returns (PersonObj);
+    rpc UpdatePerson(PersonObj) returns (PersonObj);
+    rpc DeletePerson(DeletePersonReq) returns (DeletePersonRes);
+    rpc ListPersons(ListPersonsReq) returns (stream PersonObj);
+}
 message Person {
     string id = 1;
     string birthdate = 2;
@@ -13,29 +20,17 @@ message Person {
     string lastName= 4;
 }
 
-message CreatePersonReq {
+message PersonObj {
     Person person = 1; 
 }
 
-message CreatePersonRes {
-    Person person = 1;  
-}
+
 
 message ReadPersonReq {
     string id = 1;
 }
 
-message ReadPersonRes {
-    Person person = 1;
-}
 
-message UpdatePersonReq {
-    Person person = 1;
-}
-
-message UpdatePersonRes {
-    Person person = 1;
-}
 
 message DeletePersonReq {
     string id = 1;
@@ -47,15 +42,5 @@ message DeletePersonRes {
 
 message ListPersonsReq {}
 
-message ListPersonsRes {
-    Person person = 1;
-}
 
-service PersonService {
-    rpc CreatePerson(CreatePersonReq) returns (CreatePersonRes);
-    rpc ReadPerson(ReadPersonReq) returns (ReadPersonRes);
-    rpc UpdatePerson(UpdatePersonReq) returns (UpdatePersonRes);
-    rpc DeletePerson(DeletePersonReq) returns (DeletePersonRes);
-    rpc ListPersons(ListPersonsReq) returns (stream ListPersonsRes);
-}
 

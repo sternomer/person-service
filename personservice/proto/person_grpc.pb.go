@@ -18,9 +18,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PersonServiceClient interface {
-	CreatePerson(ctx context.Context, in *CreatePersonReq, opts ...grpc.CallOption) (*CreatePersonRes, error)
-	ReadPerson(ctx context.Context, in *ReadPersonReq, opts ...grpc.CallOption) (*ReadPersonRes, error)
-	UpdatePerson(ctx context.Context, in *UpdatePersonReq, opts ...grpc.CallOption) (*UpdatePersonRes, error)
+	CreatePerson(ctx context.Context, in *PersonObj, opts ...grpc.CallOption) (*PersonObj, error)
+	ReadPerson(ctx context.Context, in *ReadPersonReq, opts ...grpc.CallOption) (*PersonObj, error)
+	UpdatePerson(ctx context.Context, in *PersonObj, opts ...grpc.CallOption) (*PersonObj, error)
 	DeletePerson(ctx context.Context, in *DeletePersonReq, opts ...grpc.CallOption) (*DeletePersonRes, error)
 	ListPersons(ctx context.Context, in *ListPersonsReq, opts ...grpc.CallOption) (PersonService_ListPersonsClient, error)
 }
@@ -33,8 +33,8 @@ func NewPersonServiceClient(cc grpc.ClientConnInterface) PersonServiceClient {
 	return &personServiceClient{cc}
 }
 
-func (c *personServiceClient) CreatePerson(ctx context.Context, in *CreatePersonReq, opts ...grpc.CallOption) (*CreatePersonRes, error) {
-	out := new(CreatePersonRes)
+func (c *personServiceClient) CreatePerson(ctx context.Context, in *PersonObj, opts ...grpc.CallOption) (*PersonObj, error) {
+	out := new(PersonObj)
 	err := c.cc.Invoke(ctx, "/blog.PersonService/CreatePerson", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -42,8 +42,8 @@ func (c *personServiceClient) CreatePerson(ctx context.Context, in *CreatePerson
 	return out, nil
 }
 
-func (c *personServiceClient) ReadPerson(ctx context.Context, in *ReadPersonReq, opts ...grpc.CallOption) (*ReadPersonRes, error) {
-	out := new(ReadPersonRes)
+func (c *personServiceClient) ReadPerson(ctx context.Context, in *ReadPersonReq, opts ...grpc.CallOption) (*PersonObj, error) {
+	out := new(PersonObj)
 	err := c.cc.Invoke(ctx, "/blog.PersonService/ReadPerson", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -51,8 +51,8 @@ func (c *personServiceClient) ReadPerson(ctx context.Context, in *ReadPersonReq,
 	return out, nil
 }
 
-func (c *personServiceClient) UpdatePerson(ctx context.Context, in *UpdatePersonReq, opts ...grpc.CallOption) (*UpdatePersonRes, error) {
-	out := new(UpdatePersonRes)
+func (c *personServiceClient) UpdatePerson(ctx context.Context, in *PersonObj, opts ...grpc.CallOption) (*PersonObj, error) {
+	out := new(PersonObj)
 	err := c.cc.Invoke(ctx, "/blog.PersonService/UpdatePerson", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (c *personServiceClient) ListPersons(ctx context.Context, in *ListPersonsRe
 }
 
 type PersonService_ListPersonsClient interface {
-	Recv() (*ListPersonsRes, error)
+	Recv() (*PersonObj, error)
 	grpc.ClientStream
 }
 
@@ -93,8 +93,8 @@ type personServiceListPersonsClient struct {
 	grpc.ClientStream
 }
 
-func (x *personServiceListPersonsClient) Recv() (*ListPersonsRes, error) {
-	m := new(ListPersonsRes)
+func (x *personServiceListPersonsClient) Recv() (*PersonObj, error) {
+	m := new(PersonObj)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -105,9 +105,9 @@ func (x *personServiceListPersonsClient) Recv() (*ListPersonsRes, error) {
 // All implementations must embed UnimplementedPersonServiceServer
 // for forward compatibility
 type PersonServiceServer interface {
-	CreatePerson(context.Context, *CreatePersonReq) (*CreatePersonRes, error)
-	ReadPerson(context.Context, *ReadPersonReq) (*ReadPersonRes, error)
-	UpdatePerson(context.Context, *UpdatePersonReq) (*UpdatePersonRes, error)
+	CreatePerson(context.Context, *PersonObj) (*PersonObj, error)
+	ReadPerson(context.Context, *ReadPersonReq) (*PersonObj, error)
+	UpdatePerson(context.Context, *PersonObj) (*PersonObj, error)
 	DeletePerson(context.Context, *DeletePersonReq) (*DeletePersonRes, error)
 	ListPersons(*ListPersonsReq, PersonService_ListPersonsServer) error
 	mustEmbedUnimplementedPersonServiceServer()
@@ -117,13 +117,13 @@ type PersonServiceServer interface {
 type UnimplementedPersonServiceServer struct {
 }
 
-func (UnimplementedPersonServiceServer) CreatePerson(context.Context, *CreatePersonReq) (*CreatePersonRes, error) {
+func (UnimplementedPersonServiceServer) CreatePerson(context.Context, *PersonObj) (*PersonObj, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePerson not implemented")
 }
-func (UnimplementedPersonServiceServer) ReadPerson(context.Context, *ReadPersonReq) (*ReadPersonRes, error) {
+func (UnimplementedPersonServiceServer) ReadPerson(context.Context, *ReadPersonReq) (*PersonObj, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadPerson not implemented")
 }
-func (UnimplementedPersonServiceServer) UpdatePerson(context.Context, *UpdatePersonReq) (*UpdatePersonRes, error) {
+func (UnimplementedPersonServiceServer) UpdatePerson(context.Context, *PersonObj) (*PersonObj, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePerson not implemented")
 }
 func (UnimplementedPersonServiceServer) DeletePerson(context.Context, *DeletePersonReq) (*DeletePersonRes, error) {
@@ -146,7 +146,7 @@ func RegisterPersonServiceServer(s grpc.ServiceRegistrar, srv PersonServiceServe
 }
 
 func _PersonService_CreatePerson_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreatePersonReq)
+	in := new(PersonObj)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func _PersonService_CreatePerson_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/blog.PersonService/CreatePerson",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PersonServiceServer).CreatePerson(ctx, req.(*CreatePersonReq))
+		return srv.(PersonServiceServer).CreatePerson(ctx, req.(*PersonObj))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -182,7 +182,7 @@ func _PersonService_ReadPerson_Handler(srv interface{}, ctx context.Context, dec
 }
 
 func _PersonService_UpdatePerson_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdatePersonReq)
+	in := new(PersonObj)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func _PersonService_UpdatePerson_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/blog.PersonService/UpdatePerson",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PersonServiceServer).UpdatePerson(ctx, req.(*UpdatePersonReq))
+		return srv.(PersonServiceServer).UpdatePerson(ctx, req.(*PersonObj))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -226,7 +226,7 @@ func _PersonService_ListPersons_Handler(srv interface{}, stream grpc.ServerStrea
 }
 
 type PersonService_ListPersonsServer interface {
-	Send(*ListPersonsRes) error
+	Send(*PersonObj) error
 	grpc.ServerStream
 }
 
@@ -234,7 +234,7 @@ type personServiceListPersonsServer struct {
 	grpc.ServerStream
 }
 
-func (x *personServiceListPersonsServer) Send(m *ListPersonsRes) error {
+func (x *personServiceListPersonsServer) Send(m *PersonObj) error {
 	return x.ServerStream.SendMsg(m)
 }
 

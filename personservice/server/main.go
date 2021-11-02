@@ -10,7 +10,6 @@ import (
 
 	pb "github.com/sternomer/go-grpc-mongodb-master/proto"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -22,13 +21,16 @@ type PersonServiceServer struct {
 	pb.UnimplementedPersonServiceServer
 }
 
-func (s *PersonServiceServer) ReadPerson(ctx context.Context, req *pb.ReadPersonReq) (*pb.ReadPersonRes, error) {
+type PersonItem struct {
+	ID        string `bson:"id"`
+	BirthDate string `bson:"birthdate"`
+	FirstName string `bson:"firstName"`
+	LastName  string `bson:"lastName"`
+}
 
-	oid, err := primitive.ObjectIDFromHex(req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
-	}
-	result := persondb.FindOne(ctx, bson.M{"_id": oid})
+func (s *PersonServiceServer) ReadPerson(ctx context.Context, req *pb.ReadPersonReq) (*pb.PersonObj, error) {
+
+	result := persondb.FindOne(ctx, bson.M{"id": req.GetId()})
 
 	data := PersonItem{}
 
@@ -36,9 +38,9 @@ func (s *PersonServiceServer) ReadPerson(ctx context.Context, req *pb.ReadPerson
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find Person with Object Id %s: %v", req.GetId(), err))
 	}
 
-	response := &pb.ReadPersonRes{
+	response := &pb.PersonObj{
 		Person: &pb.Person{
-			Id:        oid.Hex(),
+			Id:        data.ID,
 			Birthdate: data.BirthDate,
 			FirstName: data.FirstName,
 			LastName:  data.LastName,
@@ -47,18 +49,20 @@ func (s *PersonServiceServer) ReadPerson(ctx context.Context, req *pb.ReadPerson
 	return response, nil
 }
 
-func (s *PersonServiceServer) CreatePerson(ctx context.Context, req *pb.CreatePersonReq) (*pb.CreatePersonRes, error) {
+func (s *PersonServiceServer) CreatePerson(ctx context.Context, req *pb.PersonObj) (*pb.PersonObj, error) {
 
 	person := req.GetPerson()
 
 	data := PersonItem{
-
+		ID:        person.GetId(),
 		BirthDate: person.GetBirthdate(),
 		FirstName: person.GetFirstName(),
 		LastName:  person.GetLastName(),
 	}
 
 	result, err := persondb.InsertOne(mongoCtx, data)
+
+	fmt.Println(result)
 
 	if err != nil {
 
@@ -68,45 +72,35 @@ func (s *PersonServiceServer) CreatePerson(ctx context.Context, req *pb.CreatePe
 		)
 	}
 
-	oid := result.InsertedID.(primitive.ObjectID)
-	person.Id = oid.Hex()
-
-	return &pb.CreatePersonRes{Person: person}, nil
+	return &pb.PersonObj{Person: person}, nil
 }
 
-func (s *PersonServiceServer) UpdatePerson(ctx context.Context, req *pb.UpdatePersonReq) (*pb.UpdatePersonRes, error) {
+func (s *PersonServiceServer) UpdatePerson(ctx context.Context, req *pb.PersonObj) (*pb.PersonObj, error) {
 
 	person := req.GetPerson()
 
-	oid, err := primitive.ObjectIDFromHex(person.GetId())
-	if err != nil {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			fmt.Sprintf("Could notupdate current person bacuse id not found: %v", err),
-		)
-	}
-
 	update := bson.M{
+		"id":        person.GetId(),
 		"birthdate": person.GetBirthdate(),
 		"firstName": person.GetFirstName(),
 		"lastName":  person.GetLastName(),
 	}
 
-	filter := bson.M{"_id": oid}
+	filter := bson.M{"id": person.GetId()}
 
 	result := persondb.FindOneAndUpdate(ctx, filter, bson.M{"$set": update}, options.FindOneAndUpdate().SetReturnDocument(1))
 
 	decoded := PersonItem{}
-	err = result.Decode(&decoded)
+	err := result.Decode(&decoded)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.NotFound,
 			fmt.Sprintf("Could not find Person with supplied ID: %v", err),
 		)
 	}
-	return &pb.UpdatePersonRes{
+	return &pb.PersonObj{
 		Person: &pb.Person{
-			Id:        decoded.ID.Hex(),
+			Id:        decoded.ID,
 			Birthdate: decoded.BirthDate,
 			FirstName: decoded.FirstName,
 			LastName:  decoded.LastName,
@@ -114,13 +108,9 @@ func (s *PersonServiceServer) UpdatePerson(ctx context.Context, req *pb.UpdatePe
 	}, nil
 }
 
-func (s *PersonServiceServer) DeletePerson(ctx context.Context, req *pb.DeletePersonReq) ( *pb.DeletePersonRes, error) {
-	oid, err := primitive.ObjectIDFromHex(req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
-	}
+func (s *PersonServiceServer) DeletePerson(ctx context.Context, req *pb.DeletePersonReq) (*pb.DeletePersonRes, error) {
 
-	_, err = persondb.DeleteOne(ctx, bson.M{"_id": oid})
+	_, err := persondb.DeleteOne(ctx, bson.M{"id": req.GetId()})
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find/delete person with id %s: %v", req.GetId(), err))
 	}
@@ -147,9 +137,9 @@ func (s *PersonServiceServer) ListPersons(req *pb.ListPersonsReq, stream pb.Pers
 			return status.Errorf(codes.Unavailable, fmt.Sprintf("Could not decode data: %v", err))
 		}
 
-		stream.Send(&pb.ListPersonsRes{
+		stream.Send(&pb.PersonObj{
 			Person: &pb.Person{
-				Id:        data.ID.Hex(),
+				Id:        data.ID,
 				Birthdate: data.BirthDate,
 				FirstName: data.FirstName,
 				LastName:  data.LastName,
@@ -161,13 +151,6 @@ func (s *PersonServiceServer) ListPersons(req *pb.ListPersonsReq, stream pb.Pers
 		return status.Errorf(codes.Internal, fmt.Sprintf("Unkown cursor error: %v", err))
 	}
 	return nil
-}
-
-type PersonItem struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	BirthDate string             `bson:"birthdate"`
-	FirstName string             `bson:"firstName"`
-	LastName  string             `bson:"lastName"`
 }
 
 var db *mongo.Client
